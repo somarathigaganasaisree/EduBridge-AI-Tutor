@@ -4,3 +4,5 @@ langchain-text-splitters
 sentence-transformers
 chromadb
 groq
+fastapi
+uvicorn
