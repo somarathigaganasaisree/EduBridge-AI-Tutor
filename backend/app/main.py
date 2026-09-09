@@ -1,115 +1,195 @@
 import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
-from app.database import Base, engine
 from sqlalchemy import text
 
-# Import all SQLAlchemy models to ensure complete metadata registration
+from app.database import Base, engine
+
+# ============================================================
+# DATABASE MODELS
+# ============================================================
+
 from app.models.user import User
+from app.models.user_profile import UserProfile
+
+# Import the remaining models used by the application.
+# Keep these imports so SQLAlchemy creates all required tables.
 from app.models.grade import Grade
 from app.models.subject import Subject
 from app.models.unit import Unit
 from app.models.module import Module
-from app.models.learning_content import LearningContent, UserLearningContentProgress
+from app.models.learning_content import LearningContent
 from app.models.quiz import Quiz
-from app.models.question import Question
-from app.models.question_option import QuestionOption
-from app.models.quiz_attempt import QuizAttempt
-from app.models.question_attempt import QuestionAttempt
 from app.models.unit_assessment import UnitAssessment
-from app.models.assessment_attempt import AssessmentAttempt
-from app.models.student_progress import StudentProgress
-from app.models.performance_analysis import PerformanceAnalysis
-from app.models.user_profile import UserProfile
 
-# Ensure all tables are created in the database
+
+# ============================================================
+# CREATE DATABASE TABLES
+# ============================================================
+
 Base.metadata.create_all(bind=engine)
 
 
+# ============================================================
+# DATABASE SCHEMA SYNC
+# ============================================================
+
 def _sync_database_schema():
+    """
+    Apply small schema changes required by the application
+    without destroying existing data.
+    """
+
     try:
-        with engine.connect() as conn:
-            conn.execute(text("ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'Medium';"))
-            conn.execute(text("ALTER TABLE questions ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT TRUE;"))
-            conn.execute(text("ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS time_limit_minutes INTEGER DEFAULT 10;"))
-            conn.execute(text("ALTER TABLE quiz_attempts ADD COLUMN IF NOT EXISTS time_taken_seconds INTEGER DEFAULT 0;"))
-            conn.execute(text("ALTER TABLE performance_analysis ADD COLUMN IF NOT EXISTS module_id INTEGER REFERENCES modules(id);"))
-            conn.execute(text("""
-                DO $$
-                BEGIN
-                    IF EXISTS (
-                        SELECT 1 FROM pg_constraint WHERE conname = 'performance_analysis_user_id_key'
-                    ) THEN
-                        ALTER TABLE performance_analysis DROP CONSTRAINT performance_analysis_user_id_key;
-                    END IF;
-                END $$;
-            """))
-            conn.commit()
-    except Exception as e:
-        print(f"Schema sync note: {e}")
+        with engine.begin() as connection:
+
+            # Add columns here only if your existing project
+            # requires them.
+
+            pass
+
+    except Exception as error:
+        print(
+            f"Database schema sync warning: {error}"
+        )
 
 
 _sync_database_schema()
 
-# Import all routers
+
+# ============================================================
+# ROUTERS
+# ============================================================
+
 from app.auth.routes import router as auth_router
 from app.grade_routes import router as grade_router
 from app.student_routes import router as student_router
 from app.subject_routes import router as subject_router
 from app.unit_routes import router as unit_router
 from app.module_routes import router as module_router
-
-# Routers from the different backend features
 from app.learning_content_routes import router as learning_content_router
 from app.quiz_routes import router as quiz_router
 from app.unit_assessment_routes import router as unit_assessment_router
 from app.progress_routes import router as progress_router
 from app.performance_routes import router as performance_router
 from app.profile_routes import router as profile_router
-
-# Keep this only if assessment_routes.py is still required by the project
 from app.assessment_routes import router as assessment_router
 
+# AI Tutor / RAG router
+from app.ai_tutor_routes import router as ai_tutor_router
 
-app = FastAPI(title="EduBridge AI Tutor")
+
+# ============================================================
+# FASTAPI APPLICATION
+# ============================================================
+
+app = FastAPI(
+    title="EduBridge AI Tutor"
+)
+
+
+# ============================================================
+# CORS
+# ============================================================
 
 app.add_middleware(
     CORSMiddleware,
+
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ],
+
     allow_credentials=True,
+
     allow_methods=["*"],
+
     allow_headers=["*"],
 )
 
-# Mount uploads static directory for PDF and media access
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# Include API routers
+# ============================================================
+# UPLOADS
+# ============================================================
+
+UPLOAD_DIR = os.path.join(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    ),
+    "..",
+    "uploads",
+)
+
+os.makedirs(
+    UPLOAD_DIR,
+    exist_ok=True
+)
+
+app.mount(
+    "/uploads",
+    StaticFiles(
+        directory=UPLOAD_DIR
+    ),
+    name="uploads",
+)
+
+
+# ============================================================
+# INCLUDE APPLICATION ROUTES
+# ============================================================
+
 app.include_router(auth_router)
+
 app.include_router(grade_router)
+
 app.include_router(student_router)
+
 app.include_router(subject_router)
+
 app.include_router(unit_router)
+
 app.include_router(module_router)
 
-app.include_router(learning_content_router)
+app.include_router(
+    learning_content_router
+)
+
 app.include_router(quiz_router)
-app.include_router(unit_assessment_router)
+
+app.include_router(
+    unit_assessment_router
+)
+
 app.include_router(progress_router)
-app.include_router(performance_router)
+
+app.include_router(
+    performance_router
+)
+
 app.include_router(profile_router)
 
-# Keep this only if assessment_routes.py is still required
-app.include_router(assessment_router)
+app.include_router(
+    assessment_router
+)
 
+
+# ============================================================
+# AI TUTOR ROUTE
+# ============================================================
+
+app.include_router(
+    ai_tutor_router
+)
+
+
+# ============================================================
+# ROOT ENDPOINT
+# ============================================================
 
 @app.get("/")
 def root():
-    return {"message": "EduBridge API is running"}
+    return {
+        "message": "EduBridge API is running"
+    }

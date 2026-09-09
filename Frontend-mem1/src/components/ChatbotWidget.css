@@ -187,3 +187,16 @@
 .chatbot-input-area button:hover {
   background-color: #4338ca;
 }
+.chatbot-toggle {
+  position: fixed !important;
+  right: 25px !important;
+  bottom: 25px !important;
+  width: 60px !important;
+  height: 60px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 999999 !important;
+}

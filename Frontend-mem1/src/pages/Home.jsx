@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { api } from "../api/client";
 import "./Home.css";
+import ChatbotWidget from "../components/ChatbotWidget";
 
 function Home({ view }) {
   const navigate = useNavigate();
@@ -400,6 +401,9 @@ function Home({ view }) {
           </>
         )}
       </main>
+
+      {/* AI Doubt Solver */}
+      <ChatbotWidget grade={user?.grade_id} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import ChatbotWidget from "../components/ChatbotWidget";
 import "./GradeDashboard.css";
 
 function GradeDashboard() {
@@ -14,7 +15,6 @@ function GradeDashboard() {
         </p>
 
         <div className="dashboard-options">
-
           <Link
             to={`/learn/${grade}`}
             className="dashboard-card"
@@ -38,9 +38,11 @@ function GradeDashboard() {
             <h2>Assessment</h2>
             <p>Check your overall understanding</p>
           </Link>
-
         </div>
       </div>
+
+      {/* AI CHATBOT */}
+      <ChatbotWidget />
     </div>
   );
 }
